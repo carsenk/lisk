@@ -1,46 +1,64 @@
-var pgp = require("pg-promise");
+'use strict';
 
-function Inserts(record, values, concat) {
-    if (!(this instanceof Inserts)) {
-        return new Inserts(record, values, concat);
-    }
+var pgp = require('pg-promise');
 
-    var self = this;
+/**
+ * Creates and returns an insert instance
+ * @memberof module:helpers
+ * @requires pg-promise
+ * @class
+ * @param {Object} record
+ * @param {Object} values
+ * @param {boolean} [concat]
+ * @return {function} True if ip is in the list, false otherwise.
+ * @throws {string} Error description
+ */
 
-    if (!record || !record.table || !record.values) {
-        throw "Inserts: Invalid record argument";
-    }
+function Inserts (record, values, concat) {
+	if (!(this instanceof Inserts)) {
+		return new Inserts(record, values, concat);
+	}
 
-    if (!values) {
-        throw "Inserts: Invalid values argument";
-    }
+	var self = this;
 
-    this.namedTemplate = function () {
-        return record.fields.map(function (field, index) {
-            return "${" + field + "}";
-        }).join(",");
-    };
+	if (!record || !record.table || !record.values) {
+		throw 'Inserts: Invalid record argument';
+	}
 
-    this._template = this.namedTemplate();
+	if (!values) {
+		throw 'Inserts: Invalid values argument';
+	}
 
-    this.template = function () {
-        var values;
-        var fields = record.fields.map(pgp.as.name).join(",");
-        if (concat) {
-            values = "$1";
-        } else {
-            values = "(" + this.namedTemplate() + ")";
-        }
-        return pgp.as.format("INSERT INTO $1~($2^) VALUES $3^", [record.table, fields, values]);
-    };
+	this.namedTemplate = function () {
+		return record.fields.map(function (field, index) {
+			return '${' + field + '}';
+		}).join(',');
+	};
 
-    this._rawDBType = true;
+	this._template = this.namedTemplate();
+	/**
+	 * Creates pg insert sentence.
+	 * @method
+	 * @return {string} Sql sentence
+	 */
+	this.template = function () {
+		var values;
+		var fields = record.fields.map(pgp.as.name).join(',');
+		if (concat) {
+			values = '$1';
+		} else {
+			values = '(' + this.namedTemplate() + ')';
+		}
+		return pgp.as.format('INSERT INTO $1~($2^) VALUES $3^', [record.table, fields, values]);
+	};
 
-    this.formatDBType = function () {
-        return values.map(function (v) {
-            return "(" + pgp.as.format(self._template, v) + ")";
-        }).join(",");
-    };
+	this._rawDBType = true;
+
+	this.formatDBType = function () {
+		return values.map(function (v) {
+			return '(' + pgp.as.format(self._template, v) + ')';
+		}).join(',');
+	};
 }
 
 module.exports = Inserts;

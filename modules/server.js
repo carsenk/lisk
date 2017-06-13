@@ -1,73 +1,83 @@
-var util = require("util");
-var async = require("async");
-var path = require("path");
-var Router = require("../helpers/router.js");
-var sandboxHelper = require("../helpers/sandbox.js");
+'use strict';
+
+var async = require('async');
+var path = require('path');
+var sandboxHelper = require('../helpers/sandbox.js');
 
 // Private fields
-var modules, library, self, private = {}, shared = {};
+var modules, self, __private = {}, shared = {};
 
-private.loaded = false
+__private.loaded = false;
 
+/**
+ * Initializes Server.
+ * @memberof module:server
+ * @class
+ * @classdesc Main server methods.
+ * @param {scope} scope - App instance.
+ * @param {function} cb - Callback function.
+ * @return {setImmediateCallback} Callback function with `self` as data.
+ */
 // Constructor
-function Server(cb, scope) {
-	library = scope;
+function Server (cb, scope) {
 	self = this;
-	self.__private = private;
-	private.attachApi();
 
 	setImmediate(cb, null, self);
 }
 
-// Private methods
-private.attachApi = function() {
-	var router = new Router();
-
-	router.use(function (req, res, next) {
-		if (modules) return next();
-		res.status(500).send({success: false, error: "Blockchain is loading"});
-	});
-
-	router.get('/', function (req, res) {
-		if (private.loaded) {
-			res.render('wallet.html', {layout: false});
-		} else {
-			res.render('loading.html');
-		}
-	});
-
-	router.use(function (req, res, next) {
-		if (req.url.indexOf('/api/') == -1 && req.url.indexOf('/peer/') == -1) {
-			return res.redirect('/');
-		}
-		next();
-		// res.status(500).send({ success: false, error: 'api not found' });
-	});
-
-	library.network.app.use('/', router);
-}
-
 // Public methods
-
+/**
+ * Calls helpers.sandbox.callMethod().
+ * @implements {sandboxHelper.callMethod}
+ * @param {function} call - Method to call.
+ * @param {} args - List of arguments.
+ * @param {function} cb - Callback function.
+ */
 Server.prototype.sandboxApi = function (call, args, cb) {
 	sandboxHelper.callMethod(shared, call, args, cb);
-}
+};
 
 // Events
+/**
+ * Modules are not required in this file.
+ * @param {modules} scope - Loaded modules.
+ */
 Server.prototype.onBind = function (scope) {
-	modules = scope;
-}
+	modules = true;
+};
 
+/**
+ * Sets private variable loaded to true.
+ */
 Server.prototype.onBlockchainReady = function () {
-	private.loaded = true;
-}
+	__private.loaded = true;
+};
 
+/**
+ * Sets private variable loaded to false.
+ * @param {function} cb
+ * @return {setImmediateCallback} cb
+ */
 Server.prototype.cleanup = function (cb) {
-	private.loaded = false;
-	cb();
-}
+	__private.loaded = false;
+	return setImmediate(cb);
+};
 
-// Shared
+/**
+ * Returns private loaded value
+ * @return {boolean} loaded
+ */
+Server.prototype.isLoaded = function () {
+	return __private.loaded;
+};
+
+/**
+ * Returns true if modules are loaded.
+ * @return {boolean} modules loaded
+ */
+Server.prototype.areModulesReady = function () {
+	return !!modules;
+};
 
 // Export
 module.exports = Server;

@@ -1,37 +1,53 @@
-var util = require("util");
-var request = require("request");
-var fs = require("fs");
-var crypto = require("crypto");
-var ed = require("ed25519");
-var sandboxHelper = require("../helpers/sandbox.js");
+'use strict';
+
+var crypto = require('crypto');
+var fs = require('fs');
+var sandboxHelper = require('../helpers/sandbox.js');
 
 // Private fields
-var modules, library, self, private = {}, shared = {};
+var self, __private = {}, shared = {};
 
-private.loaded = false;
+__private.loaded = false;
 
+/**
+ * @class
+ * @classdesc Main Crypto methods.
+ * @param {setImmediateCallback} cb - Callback function.
+ * @param {scope} scope - App instance.
+ */
 // Constructor
-function Crypto(cb, scope) {
-	library = scope;
+function Crypto (cb, scope) {
 	self = this;
-	self.__private = private;
 
 	setImmediate(cb, null, self);
 }
 
 // Public methods
+/**
+ * Calls helpers.sandbox.callMethod().
+ * @implements module:helpers#callMethod
+ * @param {function} call - Method to call.
+ * @param {*} args - List of arguments.
+ * @param {function} cb - Callback function.
+ */
 Crypto.prototype.sandboxApi = function (call, args, cb) {
 	sandboxHelper.callMethod(shared, call, args, cb);
-}
+};
 
 // Events
+/**
+ * Modules are not required in this file.
+ * @param {modules} scope - Loaded modules.
+ */
 Crypto.prototype.onBind = function (scope) {
-	modules = scope;
-}
+};
 
+/**
+ * Sets to true private variable loaded.
+ */
 Crypto.prototype.onBlockchainReady = function () {
-	private.loaded = true;
-}
+	__private.loaded = true;
+};
 
-// Shared
+// Export
 module.exports = Crypto;
